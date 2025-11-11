@@ -21,6 +21,7 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver import ActionChains
+from selenium.common.exceptions import TimeoutException
 
 # ================================================
 # 환경 설정
@@ -77,7 +78,7 @@ def web_task():
     for item in tree.get_children():
         tree.delete(item)
 
-    progress_log_thread("웹드라이버 실행중...")
+    progress_log_thread("웹드라이버 실행")
 
     try:
         driver = create_driver()
@@ -89,13 +90,14 @@ def web_task():
     try:
         # 로그인
         driver.get("https://pp.kepco.co.kr/intro.do")
-        progress_log_thread("로그인중...")
+        progress_log_thread("로그인")
 
         driver.find_element(By.ID, "RSA_USER_ID").send_keys("pentjj")
         driver.find_element(By.ID, "RSA_USER_PWD").send_keys("Hyun@9539")
         ActionChains(driver).send_keys(Keys.RETURN).perform()
 
         # 첫 번째 고객번호 로그인 후 검침 화면으로
+        progress_log_thread("검침화면 이동")
         driver.get("https://pp.kepco.co.kr/auth/register_after.do?CUSTNO=0526314773")
         driver.get("https://pp.kepco.co.kr/cc/cc0101.do?menu_id=O010207")
 
@@ -116,22 +118,29 @@ def web_task():
             progress_log_thread(f"{sheet_name_1[i]} 페이지 로딩중...")
 
             # 테이블 로딩
-            WebDriverWait(driver, 30).until(
+            WebDriverWait(driver, 10**6).until(
                 EC.text_to_be_present_in_element((By.ID, "jqgh_grid_VAR_NGT"), "지상")
             )
             # 계기 선택
-            select_element = WebDriverWait(driver, 10).until(
+            select_element = WebDriverWait(driver, 10**6).until(
                 EC.presence_of_element_located((By.ID, "SEL_METER_ID"))
             )
             Select(select_element).select_by_value(values_to_select[i])
 
-            # 조회 버튼 클릭
-            WebDriverWait(driver, 30).until(
-                EC.element_to_be_clickable((By.XPATH, '//*[@id="txt"]/div[2]/p/span[1]/a/img'))
-            ).click()
+            try:
+                
+                # 조회 버튼 클릭
+                WebDriverWait(driver, 10**6).until(
+                    EC.text_to_be_present_in_element((By.XPATH, '//*[@id="txt"]/div[2]/p/span[1]/a/img'))
+            )
+                
+            except TimeoutException:
+                print("⚠️ 대기 시간 초과: 지정한 요소의 텍스트를 찾지 못했습니다.")
+            except Exception as e:
+                print(f"⚠️ 예외 발생: {e}")
 
             # 로딩 끝날 때까지
-            WebDriverWait(driver, 30).until(
+            WebDriverWait(driver, 10**6).until(
                 EC.presence_of_element_located((
                     By.XPATH,
                     '//div[@id="backgroundLayer" and @class="loadingwrap" and @style="display: none;"]'
