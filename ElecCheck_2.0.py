@@ -7,6 +7,7 @@ import openpyxl
 import pyautogui
 import tkinter as tk
 import tkinter.font as tkFont
+import time
 from tkinter import filedialog, messagebox
 
 import ttkbootstrap as tb
@@ -102,50 +103,33 @@ def web_task():
         driver.get("https://pp.kepco.co.kr/cc/cc0101.do?menu_id=O010207")
 
         # 이 고객번호는 계기 여러 개라 셀렉트 해야 하는 것들
-        values_to_select = [
-            "0526314773+06",
-            "0526314773***",
-            "0526314773+01",
-            "0526314773+02",
-            "0526314773+07",
-            "0526314773+04",
-            "0526314773+05",
-        ]
-        sheet_name_1 = ["설화명곡", "월배기지", "서부정류장", "반월당", "신천", "방촌", "안심"]
+        values_to_select = ["0526314773+06", "0526314773***", "0526314773+01", "0526314773+02","0526314773+03", "0526314773+04", "0526314773+05", "0526314773+07", "0526314773+08"]
+        sheet_name_1 = ["설화명곡", "월배기지", "서부정류장", "반월당", "신천", "방촌", "안심", "숙천", "금락"]
 
-        # 첫 7개 처리
-        for i in range(7):
+        # 1호선 변전소
+        for i in range(9):
             progress_log_thread(f"{sheet_name_1[i]} 페이지 로딩중...")
 
             # 테이블 로딩
-            WebDriverWait(driver, 10**6).until(
-                EC.text_to_be_present_in_element((By.ID, "jqgh_grid_VAR_NGT"), "지상")
-            )
+            WebDriverWait(driver, 10**6).until(EC.text_to_be_present_in_element((By.ID, "jqgh_grid_VAR_NGT"), "지상"))
+            time.sleep(1.0)
+            
             # 계기 선택
-            select_element = WebDriverWait(driver, 10**6).until(
-                EC.presence_of_element_located((By.ID, "SEL_METER_ID"))
-            )
+            select_element = WebDriverWait(driver, 10**6).until(EC.presence_of_element_located((By.ID, "SEL_METER_ID")))
             Select(select_element).select_by_value(values_to_select[i])
-
-            try:
-                
-                # 조회 버튼 클릭
-                WebDriverWait(driver, 10**6).until(
-                    EC.text_to_be_present_in_element((By.XPATH, '//*[@id="txt"]/div[2]/p/span[1]/a/img'))
-            )
-                
-            except TimeoutException:
-                print("⚠️ 대기 시간 초과: 지정한 요소의 텍스트를 찾지 못했습니다.")
-            except Exception as e:
-                print(f"⚠️ 예외 발생: {e}")
+            time.sleep(1.0)
+            
+            # 로딩 끝날 때까지
+            WebDriverWait(driver, 10**6).until(EC.presence_of_element_located((By.XPATH,'//div[@id="backgroundLayer" and @class="loadingwrap" and @style="display: none;"]')))
+            time.sleep(1.0)
+            # 조회 버튼 클릭
+            
+            WebDriverWait(driver, 10**6).until(EC.presence_of_element_located((By.XPATH, '//*[@id="txt"]/div[2]/p/span[1]/a/img'))).click()            
+            time.sleep(1.0)
 
             # 로딩 끝날 때까지
-            WebDriverWait(driver, 10**6).until(
-                EC.presence_of_element_located((
-                    By.XPATH,
-                    '//div[@id="backgroundLayer" and @class="loadingwrap" and @style="display: none;"]'
-                ))
-            )
+            WebDriverWait(driver, 10**6).until(EC.presence_of_element_located((By.XPATH,'//div[@id="backgroundLayer" and @class="loadingwrap" and @style="display: none;"]')))
+            time.sleep(1.0)
 
             # 표 텍스트 파싱
             income_values = parse_table_to_values(driver)
@@ -154,28 +138,18 @@ def web_task():
             # tree에 있던 initial_values와 비교
             insert_compare_rows(initial_values, i, income_values)
 
-        # 두 번째 라인: 고객번호만 바뀌는 10개
-        custnum_line2 = [
-            "0530087761", "0530142327", "0530094940", "0530094888", "0530094851",
-            "0530166621", "0530160011", "0530160020", "0530160039", "0537184143"
-        ]
+        # 2호선 변전소
+        custnum_line2 = ["0530087761", "0530142327", "0530094940", "0530094888", "0530094851", "0530166621", "0530160011", "0530160020", "0530160039", "0537184143"]
         sheet_name_2 = ["문양기지", "대실", "성서산단", "죽전", "반고개", "대구은행", "만촌", "대공원", "사월", "영남대"]
 
-        for offset, (custno, name) in enumerate(zip(custnum_line2, sheet_name_2), start=7):
+        for offset, (custno, name) in enumerate(zip(custnum_line2, sheet_name_2), start=9):
             progress_log_thread(f"{name} 페이지 로딩중...")
 
             driver.get(f"https://pp.kepco.co.kr/auth/register_after.do?CUSTNO={custno}")
             driver.get("https://pp.kepco.co.kr/cc/cc0101.do?menu_id=O010207")
 
-            WebDriverWait(driver, 30).until(
-                EC.text_to_be_present_in_element((By.ID, "jqgh_grid_VAR_NGT"), "지상")
-            )
-            WebDriverWait(driver, 30).until(
-                EC.presence_of_element_located((
-                    By.XPATH,
-                    '//div[@id="backgroundLayer" and @class="loadingwrap" and @style="display: none;"]'
-                ))
-            )
+            WebDriverWait(driver, 30).until(EC.text_to_be_present_in_element((By.ID, "jqgh_grid_VAR_NGT"), "지상"))
+            WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH,'//div[@id="backgroundLayer" and @class="loadingwrap" and @style="display: none;"]')))
 
             income_values = parse_table_to_values(driver)
             update_progress()
@@ -198,6 +172,7 @@ def parse_table_to_values(driver):
     element = driver.find_element(By.ID, "gview_grid")
     all_text = element.text
 
+    # "진상" 이후부터만 쓰는 기존 로직 유지
     target_string = "진상"
     start_index = all_text.find(target_string)
     if start_index != -1:
@@ -207,24 +182,44 @@ def parse_table_to_values(driver):
     else:
         data_text = all_text
 
+    # 줄 → 칸 분리
     data_rows = data_text.split('\n')
     data_columns = [row.split() for row in data_rows if row.strip()]
     df = pd.DataFrame(data_columns)
 
-    # 쉼표 제거하고 숫자로
-    df = df.applymap(lambda x: re.sub(r',', '', x) if isinstance(x, str) else x)
-    df = df.apply(pd.to_numeric, errors='ignore')
+    # ===== 여기부터 경고 없애는 부분 =====
+    # 1) 콤마 제거 (문자열 칼럼만)
+    for col in df.columns:
+        if df[col].dtype == object:
+            # 콤마만 제거
+            df[col] = df[col].str.replace(',', '', regex=False)
 
-    # 원본 코드 패턴 유지
+    # 2) 숫자로 변환 가능한 건 숫자로
+    for col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    # ===== 여기까지 =====
+
+    # 안전하게 값 꺼내는 헬퍼
+    def get_val(r, c):
+        try:
+            val = df.iloc[r, c]
+            # NaN이면 빈 문자열로
+            if pd.isna(val):
+                return ''
+            return val
+        except Exception:
+            return ''
+
+    # 원래 패턴 유지 (8개)
     income_values = [
         '',
-        df.iloc[0, 3],  # 9
-        df.iloc[0, 4],  # 10
-        df.iloc[0, 5],  # 11
-        df.iloc[0, 8],  # 12 (9+10?)
+        get_val(0, 3),  # 9
+        get_val(0, 4),  # 10
+        get_val(0, 5),  # 11
+        get_val(0, 8),  # 12
         '',
-        df.iloc[0, 6],  # 14
-        df.iloc[0, 7],  # 15
+        get_val(0, 6),  # 14
+        get_val(0, 7),  # 15
     ]
     return income_values
 
@@ -254,10 +249,10 @@ def insert_compare_rows(initial_values, idx, income_values):
 
     if cond:
         tag = f'row_ok_{idx}'
-        tree.tag_configure(tag, background='blue', foreground='white')
+        tree.tag_configure(tag, background='#B7DBF7', foreground='#0E2E44')
     else:
         tag = f'row_bad_{idx}'
-        tree.tag_configure(tag, background='red', foreground='yellow')
+        tree.tag_configure(tag, background='#F7C8B0', foreground='#5A1E00')
 
     tree.insert('', tk.END, values=initial_values[idx], tags=(tag,))
     tree.insert('', tk.END, values=income_values, tags=(tag,))
@@ -349,32 +344,36 @@ def on_sheet_select(sheet_name, workbook):
         tree.delete(item)
 
     cell_ranges = [
-        ['B4', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12'],
-        ['F4', 'G6', 'G7', 'G8', 'G9', 'G10', 'G11', 'G12'],
-        ['J4', 'K6', 'K7', 'K8', 'K9', 'K10', 'K11', 'K12'],
-
-        ['B17', 'C19', 'C20', 'C21', 'C22', 'C23', 'C24', 'C25'],
-        ['F17', 'G19', 'G20', 'G21', 'G22', 'G23', 'G24', 'G25'],
-        ['J17', 'K19', 'K20', 'K21', 'K22', 'K23', 'K24', 'K25'],
-
-        ['B30', 'C32', 'C33', 'C34', 'C35', 'C36', 'C37', 'C38'],
-
-        ['B44', 'C46', 'C47', 'C48', 'C49', 'C50', 'C51', 'C52'],
-        ['F44', 'G46', 'G47', 'G48', 'G49', 'G50', 'G51', 'G52'],
-        ['J44', 'K46', 'K47', 'K48', 'K49', 'K50', 'K51', 'K52'],
-
-        ['B57', 'C59', 'C60', 'C61', 'C62', 'C63', 'C64', 'C65'],
-        ['F57', 'G59', 'G60', 'G61', 'G62', 'G63', 'G64', 'G65'],
-        ['J57', 'K59', 'K60', 'K61', 'K62', 'K63', 'K64', 'K65'],
-
-        ['B70', 'C72', 'C73', 'C74', 'C75', 'C76', 'C77', 'C78'],
-        ['F70', 'G72', 'G73', 'G74', 'G75', 'G76', 'G77', 'G78'],
-        ['J70', 'K72', 'K73', 'K74', 'K75', 'K76', 'K77', 'K78'],
-
-        ['B83', 'C85', 'C86', 'C87', 'C88', 'C89', 'C90', 'C91'],
+        ['B4', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12'], #설화명곡
+        ['F4', 'G6', 'G7', 'G8', 'G9', 'G10', 'G11', 'G12'], #월배기지
+        ['J4', 'K6', 'K7', 'K8', 'K9', 'K10', 'K11', 'K12'], #서부정류장
+        
+        ['B17', 'C19', 'C20', 'C21', 'C22', 'C23', 'C24', 'C25'], #반월당
+        ['F17', 'G19', 'G20', 'G21', 'G22', 'G23', 'G24', 'G25'], #신천
+        ['J17', 'K19', 'K20', 'K21', 'K22', 'K23', 'K24', 'K25'], #방촌
+        
+        ['B30', 'C32', 'C33', 'C34', 'C35', 'C36', 'C37', 'C38'], #안심
+        ['F30', 'G32', 'G33', 'G34', 'G35', 'G36', 'G37', 'G38'], #숙천
+        ['J30', 'K32', 'K33', 'K34', 'K35', 'K36', 'K37', 'K38'], #금락
+        
+        ['B51', 'C53', 'C54', 'C55', 'C56', 'C57', 'C58', 'C59'], #문양기지
+        ['F51', 'G53', 'G54', 'G55', 'G56', 'G57', 'G58', 'G59'], #대실
+        ['J51', 'K53', 'K54', 'K55', 'K56', 'K57', 'K58', 'K59'], #성서산단
+        
+        ['B64', 'C66', 'C67', 'C68', 'C69', 'C70', 'C71', 'C72'], #죽전
+        ['F64', 'G66', 'G67', 'G68', 'G69', 'G70', 'G71', 'G72'], #반고개
+        ['J64', 'K66', 'K67', 'K68', 'K69', 'K70', 'K71', 'K72'], #대구은행
+        
+        ['B77', 'C79', 'C80', 'C81', 'C82', 'C83', 'C84', 'C85'], #만촌
+        ['F77', 'G79', 'G80', 'G81', 'G82', 'G83', 'G84', 'G85'], #대공원
+        ['J77', 'K79', 'K80', 'K81', 'K82', 'K83', 'K84', 'K85'], #사월
+        
+        ['B90', 'C92', 'C93', 'C94', 'C95', 'C96', 'C97', 'C98'], #만촌        
+        
+       
     ]
     cell_values = [
-        '설화명곡', '월배기지', '서부정류장', '반월당', '신천', '방촌', '안심',
+        '설화명곡', '월배기지', '서부정류장', '반월당', '신천', '방촌', '안심', '숙천', '금락',
         '문양기지', '대실', '성서산단', '죽전', '반고개', '대구은행', '만촌', '대공원', '사월', '영남대'
     ]
 
